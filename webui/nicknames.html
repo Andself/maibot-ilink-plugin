@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>微信账号管理</title>
+<style>
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;padding:24px;font-family:var(--maibot-font-body,system-ui);color:var(--maibot-foreground,#202020);background:var(--maibot-background,#fafafa)}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}h1{font-size:23px;margin:0 0 8px}p{margin:0;line-height:1.6}.muted{color:var(--maibot-muted,#777);font-size:14px}
+.tablewrap{overflow:auto;border:1px solid var(--maibot-border,#ddd);border-radius:12px;background:var(--maibot-surface,#fff)}table{width:100%;border-collapse:collapse;text-align:left;white-space:nowrap}th,td{padding:16px;border-bottom:1px solid var(--maibot-border,#ddd)}th{font-size:13px;color:var(--maibot-muted,#777);font-weight:500}tr:last-child td{border-bottom:0}.id{font-family:monospace;font-size:12px;max-width:240px;overflow:hidden;text-overflow:ellipsis}.badge{font-size:12px;padding:4px 9px;border:1px solid var(--maibot-border,#ddd);border-radius:20px}
+button{cursor:pointer;border:1px solid var(--maibot-border,#ccc);border-radius:8px;padding:9px 16px;color:inherit;background:var(--maibot-surface,#fff);font:inherit;font-size:14px}button:hover{background:var(--maibot-soft,#eee)}button:focus-visible,input:focus-visible{outline:2px solid var(--maibot-primary,#4169e1);outline-offset:3px}button:disabled{opacity:.55;cursor:wait}.primary{background:var(--maibot-primary,#202020);color:var(--maibot-primary-foreground,#fff)}.primary:hover{filter:brightness(1.15);background:var(--maibot-primary,#202020)}
+dialog{padding:0;border:1px solid var(--maibot-border,#ddd);border-radius:16px;width:min(520px,calc(100vw - 32px));color:inherit;background:var(--maibot-surface,#fff);box-shadow:0 24px 80px #0005}dialog::backdrop{background:#0008}.dialogbody{padding:26px}h2{margin:0 0 16px;font-size:20px}.identity{background:var(--maibot-soft,#f3f3f3);padding:14px;border-radius:10px;margin-bottom:22px;font-size:13px;line-height:1.8;overflow-wrap:anywhere}.identity code{display:block;white-space:normal;font-size:12px}.label{display:block;font-size:14px;margin-bottom:8px}input{width:100%;padding:12px;border:1px solid var(--maibot-border,#ccc);border-radius:8px;color:inherit;background:var(--maibot-background,#fff);font:inherit}.hint{font-size:12px;margin-top:8px;color:var(--maibot-muted,#777)}.footer{display:flex;justify-content:flex-end;gap:10px;padding:18px 26px;border-top:1px solid var(--maibot-border,#ddd)}#status{min-height:24px;margin-top:14px;font-size:14px}#error{color:var(--maibot-danger,#c22);min-height:20px;font-size:13px;margin-top:10px}
+@media(max-width:600px){body{padding:16px}th,td{padding:12px}.id{max-width:140px}.heading{align-items:flex-start}}
+/* The host supplies a full viewport; only the dialog body may scroll. */
+html{height:100%}body{min-height:100%;padding:28px}
+.heading{margin-bottom:22px}h1{font-size:22px;letter-spacing:-.4px}
+th{background:var(--maibot-soft,#f5f5f5)}td:first-child{font-weight:600}
+dialog{width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:hidden;border-radius:14px;box-shadow:0 20px 70px #0004}
+dialog::backdrop{background:#0007;backdrop-filter:blur(3px)}
+#form{display:flex;flex-direction:column;max-height:inherit}
+.dialogbody{min-height:0;overflow-y:auto;padding:24px 24px 16px}
+h2{font-size:19px;margin-bottom:16px;letter-spacing:-.3px}
+.identity{padding:12px 14px;margin-bottom:18px;line-height:1.65;border:1px solid var(--maibot-border,#ddd)}
+.identity span{display:block;margin-bottom:5px;font-weight:500}
+.identity code{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--maibot-muted,#777);font-size:11px}
+input{padding:10px 12px}.hint{line-height:1.6}#error:empty{display:none}
+.footer{flex:none;position:relative;padding:16px 24px;background:var(--maibot-surface,#fff)}
+.footer button{min-width:88px}.footer .primary{font-weight:600}
+@media(max-height:450px){.dialogbody{padding:16px 20px 12px}.identity{margin-bottom:12px;padding:8px 12px}h2{margin-bottom:12px}.footer{padding:12px 20px}}
+</style></head><body>
+<header class="heading"><div><h1>微信账号管理</h1><p class="muted">扫码绑定账号，管理用户称呼与朋友介绍。</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="bindAdmin" type="button" class="primary" hidden>绑定管理员</button><button id="bindUser" type="button" class="primary" hidden>绑定新用户</button><button id="refresh" type="button">刷新名单</button></div></header>
+<div class="tablewrap"><table aria-label="微信用户名单"><thead><tr><th>当前称呼</th><th>身份</th><th>微信用户 ID</th><th>机器人账号</th><th>操作</th></tr></thead><tbody id="users"></tbody></table></div>
+<p id="status" role="status" aria-live="polite">正在加载用户…</p>
+<section style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px;border:1px solid var(--maibot-border,#ddd);border-radius:12px;margin-top:20px"><div><strong>转达消息</strong><p id="relaySummary" class="muted">正在加载…</p></div><button id="editRelay" type="button">设置转达组</button></section>
+<dialog id="relayDialog" aria-labelledby="relayTitle"><div style="display:flex;flex-direction:column;max-height:inherit"><div class="dialogbody"><h2 id="relayTitle">转达消息设置</h2><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="relayEnabled" style="width:auto">开启组内文字转达</label><p class="hint">只有处于同一组的成员才能互相转达，管理员也不例外。分组不具有传递性。消息标注发起人；对方需有有效微信会话，24小时从用户最近一条真实消息计算，重启不续期。接口接受不等于送达。重启后会恢复尚未过期的本地回复凭据。</p><div id="relayGroups"></div><button id="addRelayGroup" type="button" style="margin-top:14px">添加转达组</button><p id="relayError" role="alert" style="color:var(--maibot-danger,#c22);margin-top:12px"></p></div><footer class="footer"><button id="cancelRelay" type="button">取消</button><button id="saveRelay" type="button" class="primary">保存设置</button></footer></div></dialog>
+<dialog id="editor" aria-labelledby="dialogTitle"><div id="form">
+<div class="dialogbody"><h2 id="dialogTitle">编辑昵称</h2><div class="identity"><span id="current"></span><code id="userId"></code><code id="accountId"></code></div>
+<label class="label" for="nickname">本地昵称</label><input id="nickname" name="nickname" maxlength="40" autocomplete="off" placeholder="输入昵称，例如 Andself">
+<p class="hint">最多40字；留空保存可恢复默认称呼。新的称呼从下一条消息生效。</p><p id="error" role="alert"></p></div>
+<footer class="footer"><button id="cancel" type="button">取消</button><button id="save" class="primary" type="button">保存昵称</button></footer>
+</div></dialog>
+<dialog id="bindingDialog" aria-labelledby="bindingTitle"><div style="display:flex;flex-direction:column;max-height:inherit">
+<div class="dialogbody"><h2 id="bindingTitle">绑定微信</h2>
+<p id="bindingHint" class="muted"></p>
+<div id="descriptionBox" style="margin-top:16px"><label class="label" for="friendDescription">这位朋友是谁？</label><input id="friendDescription" maxlength="500" placeholder="例如：小林，我的大学同学，喜欢魔兽和露营"><p class="hint">按原话保存，供新用户会话了解称呼、关系和喜好。</p></div>
+<img id="bindingQr" alt="微信绑定二维码" hidden style="display:block;width:min(240px,100%);height:auto;margin:16px auto;background:white">
+<p id="bindingState" role="status" style="margin-top:12px"></p>
+<div id="pairBox" hidden style="margin-top:12px"><label class="label" for="pairCode">手机配对验证码</label><input id="pairCode" inputmode="numeric" maxlength="12" autocomplete="off"><button id="submitCode" type="button" style="margin-top:8px">提交验证码</button></div>
+<p id="bindingError" role="alert" style="color:var(--maibot-danger,#c22);margin-top:10px"></p></div>
+<footer class="footer"><button id="closeBinding" type="button">关闭</button><button id="createBinding" type="button" class="primary">生成二维码</button></footer>
+</div></dialog>
+<dialog id="removeDialog" aria-labelledby="removeTitle"><div style="display:flex;flex-direction:column;max-height:inherit"><div class="dialogbody"><h2 id="removeTitle">移除接入账号</h2><p id="removeName"></p><div class="identity" style="margin-top:14px"><code id="removeUserId"></code><code id="removeAccountId"></code><p id="removeDescription" class="muted" style="margin-top:8px"></p></div><p class="muted">将停止此账号收发消息，并从转达组移除。昵称、人物介绍和聊天历史保留，可重新扫码接入。此操作不会解除微信侧绑定。</p><p id="removeError" role="alert" style="color:var(--maibot-danger,#c22);margin-top:12px"></p></div><footer class="footer"><button id="cancelRemoval" type="button">取消</button><button id="confirmRemoval" type="button" class="primary">确认移除</button></footer></div></dialog>
+<script type="module">
+const $=id=>document.getElementById(id);
+// The host allows only two in-flight requests; share one queue across refresh,
+// binding polling and all mutations. A failed request must not block the queue.
+let requestQueue=Promise.resolve();
+function enqueueRequest(callback){const result=requestQueue.then(callback);requestQueue=result.catch(()=>{});return result;}
+const bridge={query:(...args)=>enqueueRequest(()=>maibot.query(...args)),action:(...args)=>enqueueRequest(()=>maibot.action(...args))};
+let editing=null,busy=false,opener=null;
+let relaySettings={enabled:false,groups:[]},relayUsers=[],relayBusy=false;
+let removing=null,removalBusy=false;
+function openRemoval(user){
+  removing=user;$('removeName').textContent='请核对要移除的账号：'+user.display_name;
+  $('removeUserId').textContent='用户 ID：'+user.user_id;$('removeAccountId').textContent='机器人账号：'+user.account;
+  $('removeDescription').textContent=user.description||'未填写人物介绍';$('removeError').textContent='';$('removeDialog').showModal();
+}
+$('cancelRemoval').onclick=()=>{if(!removalBusy){$('removeDialog').close();removing=null;}};
+$('removeDialog').addEventListener('cancel',event=>{if(removalBusy)event.preventDefault();else removing=null;});
+$('confirmRemoval').onclick=async()=>{
+  if(removalBusy||!removing)return;
+  removalBusy=true;$('confirmRemoval').disabled=true;$('cancelRemoval').disabled=true;$('removeError').textContent='';
+  try{await bridge.action('remove_user',{user_key:removing.key});$('removeDialog').close();removing=null;await refresh();$('status').textContent='已移除接入账号，介绍和聊天历史保留。';}
+  catch(error){$('removeError').textContent=error.message;}
+  finally{removalBusy=false;$('confirmRemoval').disabled=false;$('cancelRemoval').disabled=false;}
+};
+function cell(row,text,cls){const td=document.createElement('td');td.textContent=text;td.title=text;if(cls)td.className=cls;row.append(td);return td;}
+async function refresh(){
+  $('refresh').disabled=true;
+  try{
+    const [data,binding,relayData]=await Promise.all([bridge.query('users'),bridge.query('binding',{}),bridge.query('relay_config',{})]);
+    relaySettings=relayData;relayUsers=data.users;
+    $('relaySummary').textContent=(relayData.enabled?'已开启':'已关闭')+' · '+relayData.groups.length+' 个转达组';
+    $('bindAdmin').hidden=binding.has_admin;$('bindUser').hidden=!binding.has_admin;
+    const fragment=document.createDocumentFragment();
+    for(const user of data.users){
+      const row=document.createElement('tr');
+      const nameCell=cell(row,user.display_name);
+      const activity=user.reply_window||{};const windowNote=document.createElement('div');windowNote.className='muted';windowNote.style.fontSize='12px';windowNote.textContent=activity.status==='active'?'本地回复窗口有效 · 到期 '+new Date(activity.expires_at*1000).toLocaleString():activity.status==='expired'?'24小时窗口已过期，请用户先发消息':'回复窗口未知，请用户先发消息';nameCell.append(windowNote);
+
+      if(user.description){
+        const note=document.createElement('div');note.className='muted';note.style.cssText='font-size:12px;white-space:normal;max-width:300px;margin-top:6px;font-weight:400';
+        const source=document.createElement('div');source.textContent='由 '+(user.introduced_by||'未知介绍者')+' 介绍';note.append(source);
+        const details=document.createElement('details');details.style.marginTop='6px';
+        const summary=document.createElement('summary');summary.textContent='查看介绍原文';summary.style.cursor='pointer';
+        const label=document.createElement('p');label.textContent='以下为介绍者原话，并非用户自述或已确认的人物事实。';
+        const quote=document.createElement('blockquote');quote.textContent=user.description;quote.style.cssText='margin:8px 0;padding-left:10px;border-left:2px solid currentColor;white-space:pre-wrap;overflow-wrap:anywhere';
+        details.append(summary,label,quote);note.append(details);nameCell.append(note);
+      }
+      const role=cell(row,'');const badge=document.createElement('span');badge.className='badge';badge.textContent=user.role;role.append(badge);
+      if(user.welcome_status){const welcomeNote=document.createElement('div');welcomeNote.className='muted';welcomeNote.style.fontSize='12px';welcomeNote.textContent='欢迎消息：'+({pending:'等待用户发消息后发送',attempting:'已尝试，结果未确认',submitted:'已提交（未验证送达）',unconfirmed:'失败或结果未确认',skipped:'已跳过'}[user.welcome_status]||'未知状态');nameCell.append(welcomeNote);}
+      cell(row,user.user_id,'id');cell(row,user.account,'id');
+      const td=cell(row,'');const edit=document.createElement('button');edit.type='button';edit.textContent='编辑';edit.setAttribute('aria-label','编辑 '+user.display_name+' 的昵称');
+      edit.onclick=()=>openEditor(user,edit);td.append(edit);
+      if(user.role!=='管理员'){const remove=document.createElement('button');remove.type='button';remove.textContent='移除';remove.style.cssText='margin-left:8px;color:var(--maibot-danger,#c22)';remove.setAttribute('aria-label','移除 '+user.display_name+' 的接入账号');remove.onclick=()=>openRemoval(user);td.append(remove);}
+      fragment.append(row);
+    }
+    $('users').replaceChildren(fragment);$('status').textContent=data.users.length?'共 '+data.users.length+' 位用户。点击对应行的“编辑”修改昵称。':'暂无已接入用户。';
+  }finally{$('refresh').disabled=false;}
+}
+function openEditor(user,button){
+  editing={...user};opener=button;$('current').textContent='当前称呼：'+user.display_name+' · '+user.role;
+  $('userId').textContent='用户 ID：'+user.user_id;$('accountId').textContent='机器人：'+user.account;
+  $('nickname').value=user.nickname||'';$('error').textContent='';$('editor').showModal();$('nickname').focus();$('nickname').select();
+}
+function closeEditor(){if(busy)return;$('editor').close();editing=null;if(opener?.isConnected)opener.focus();}
+$('cancel').onclick=closeEditor;
+$('editor').addEventListener('cancel',event=>{event.preventDefault();closeEditor();});
+$('editor').addEventListener('click',event=>{if(event.target===$('editor')){const r=$('editor').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeEditor();}});
+$('save').onclick=async event=>{
+  event.preventDefault();if(busy||!editing)return;
+  const target=editing.key,nickname=$('nickname').value.trim();
+  if([...nickname].length>40||/[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}]/u.test(nickname)){$('error').textContent='昵称最多40字，不能包含控制字符。';return;}
+  busy=true;$('save').disabled=true;$('cancel').disabled=true;$('nickname').disabled=true;$('save').textContent='保存中…';$('error').textContent='';
+  try{
+    await bridge.action('rename',{user_key:target,nickname});
+    $('editor').close();editing=null;
+    try{await refresh();$('status').textContent='昵称已保存，下一条消息起生效。';}catch(error){$('status').textContent='昵称已保存，但名单刷新失败，请点击刷新名单。';}
+    $('refresh').focus();
+  }catch(error){$('error').textContent=error.message||'保存失败，请重试。';}
+  finally{busy=false;$('save').disabled=false;$('cancel').disabled=false;$('nickname').disabled=false;$('save').textContent='保存昵称';}
+};
+$('nickname').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){event.preventDefault();$('save').click();}});
+$('refresh').onclick=()=>refresh().catch(error=>{$('status').textContent='加载失败：'+error.message;});
+function addRelayGroup(group={name:'',members:[]}){
+  const card=document.createElement('section');card.className='relayGroup';card.style.cssText='border:1px solid var(--maibot-border,#ddd);padding:14px;border-radius:10px;margin-top:14px';
+  card.dataset.groupId=group.id||'';
+  const label=document.createElement('label');label.className='label';label.textContent='组名';
+  const name=document.createElement('input');name.className='groupName';name.maxLength=40;name.value=group.name;name.placeholder='例如：游戏好友';name.setAttribute('aria-label','转达组名称');
+  card.append(label,name);
+  const sharedLabel=document.createElement('label');sharedLabel.style.cssText='display:flex;gap:8px;align-items:center;margin-top:12px';
+  const shared=document.createElement('input');shared.type='checkbox';shared.className='shareRecords';shared.style.width='auto';shared.checked=group.share_records===true;
+  const sharedText=document.createElement('span');sharedText.textContent='共享转达记录（组内所有当前成员可查看）';sharedLabel.append(shared,sharedText);card.append(sharedLabel);
+  const sharingHint=document.createElement('p');sharingHint.className='hint';sharingHint.textContent='默认关闭。只记录开启期间组内双方的明确转达正文与发送状态，不共享私聊上下文或人物资料。关闭后停止记录及读取；重新开启可读取之前有效记录。仅提供最近30天记录，供机器人参考，不代表群发或已读。';card.append(sharingHint);
+  for(const user of relayUsers){
+    const member=document.createElement('label');member.style.cssText='display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px';
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.style.width='auto';checkbox.value=user.key;checkbox.checked=group.members.includes(user.key);
+    const text=document.createElement('span');text.textContent=user.display_name+' · '+user.user_id.slice(-10);member.append(checkbox,text);card.append(member);
+  }
+  const remove=document.createElement('button');remove.type='button';remove.textContent='移除此组';remove.style.marginTop='12px';remove.onclick=()=>card.remove();card.append(remove);$('relayGroups').append(card);
+}
+$('editRelay').onclick=()=>{
+  $('relayEnabled').checked=relaySettings.enabled;$('relayGroups').replaceChildren();$('relayError').textContent='';
+  relaySettings.groups.forEach(addRelayGroup);$('relayDialog').showModal();
+};
+$('addRelayGroup').onclick=()=>addRelayGroup();
+$('cancelRelay').onclick=()=>{if(!relayBusy)$('relayDialog').close();};
+$('relayDialog').addEventListener('cancel',event=>{if(relayBusy)event.preventDefault();});
+$('saveRelay').onclick=async()=>{
+  if(relayBusy)return;
+  const groups=[...$('relayGroups').querySelectorAll('.relayGroup')].map(card=>({id:card.dataset.groupId,name:card.querySelector('.groupName').value.trim(),share_records:card.querySelector('.shareRecords').checked,members:[...card.querySelectorAll('input[type=checkbox]:checked:not(.shareRecords)')].map(input=>input.value)}));
+  if(groups.some(group=>!group.name||group.members.length<2)){$('relayError').textContent='每组需要填写组名，并至少勾选两位成员。';return;}
+  relayBusy=true;$('saveRelay').disabled=true;$('cancelRelay').disabled=true;
+  try{await bridge.action('save_relay',{config_json:JSON.stringify({enabled:$('relayEnabled').checked,groups})});$('relayDialog').close();await refresh();$('status').textContent='转达设置已保存。';}
+  catch(error){$('relayError').textContent=error.message;}
+  finally{relayBusy=false;$('saveRelay').disabled=false;$('cancelRelay').disabled=false;}
+};
+let bindingMode='admin',bindingId='',bindingTimer=null,bindingBusy=false;
+const terminal=new Set(['confirmed','error','expired','canceled','idle']);
+function showBinding(state){
+  bindingId=state.binding_id||bindingId;
+  $('bindingState').textContent=state.message||'';
+  $('bindingQr').hidden=!state.qr_image;
+  if(state.qr_image)$('bindingQr').src=state.qr_image;else $('bindingQr').removeAttribute('src');
+  $('pairBox').hidden=state.status!=='need_code';
+  const active=!terminal.has(state.status);
+  $('closeBinding').textContent=active?'取消绑定':'关闭';
+  $('createBinding').hidden=active||state.status==='confirmed';
+  $('createBinding').textContent=state.status==='expired'?'重新生成二维码':'生成二维码';
+  $('descriptionBox').hidden=bindingMode==='admin'||active||state.status==='confirmed';
+}
+async function pollBinding(){
+  if(!$('bindingDialog').open||!bindingId)return;
+  try{
+    const data=await bridge.query('binding',{binding_id:bindingId});
+    showBinding(data.binding);
+    if(terminal.has(data.binding.status)){await refresh();return;}
+  }catch(error){$('bindingError').textContent='状态查询失败，可稍后重试：'+error.message;}
+  bindingTimer=setTimeout(pollBinding,2000);
+}
+async function openBinding(mode){
+  bindingMode=mode;bindingId='';clearTimeout(bindingTimer);
+  $('bindingTitle').textContent=mode==='admin'?'绑定管理员微信':'绑定新用户';
+  $('bindingHint').textContent=mode==='admin'?'请用你的管理员微信扫码；绑定后此入口会关闭。':'请让目标用户扫码确认。该用户只获得普通用户权限，聊天会由配置的AI模型处理。';
+  $('friendDescription').value='';$('bindingError').textContent='';
+  showBinding({status:'idle'});$('bindingDialog').showModal();
+  try{
+    const data=await bridge.query('binding',{});
+    if(data.binding.binding_id&&!terminal.has(data.binding.status)){
+      bindingMode=data.binding.mode;showBinding(data.binding);pollBinding();
+    }else if(mode==='admin')await createBinding();
+    else $('friendDescription').focus();
+  }catch(error){$('bindingError').textContent=error.message;}
+}
+async function createBinding(){
+  if(bindingBusy)return;
+  const description=$('friendDescription').value.trim();
+  if(bindingMode==='user'&&!description){$('bindingError').textContent='请先用一句话介绍这位朋友。';return;}
+  bindingBusy=true;$('createBinding').disabled=true;$('bindingError').textContent='';
+  try{showBinding(await bridge.action('bind',{mode:bindingMode,description}));pollBinding();}
+  catch(error){$('bindingError').textContent=error.message;}
+  finally{bindingBusy=false;$('createBinding').disabled=false;}
+}
+async function closeBinding(){
+  if(bindingBusy)return;
+  bindingBusy=true;$('closeBinding').disabled=true;
+  try{
+    if(bindingId){const data=await bridge.query('binding',{binding_id:bindingId});if(!terminal.has(data.binding.status))await bridge.action('cancel_binding',{binding_id:bindingId});}
+    clearTimeout(bindingTimer);$('bindingDialog').close();await refresh();
+  }catch(error){$('bindingError').textContent=error.message;}
+  finally{bindingBusy=false;$('closeBinding').disabled=false;}
+}
+$('bindAdmin').onclick=()=>openBinding('admin');$('bindUser').onclick=()=>openBinding('user');
+$('createBinding').onclick=createBinding;$('closeBinding').onclick=closeBinding;
+$('bindingDialog').addEventListener('cancel',event=>{event.preventDefault();closeBinding();});
+$('submitCode').onclick=async()=>{try{showBinding(await bridge.action('pair_code',{binding_id:bindingId,code:$('pairCode').value.trim()}));$('pairCode').value='';}catch(error){$('bindingError').textContent=error.message;}};
+await maibot.ready;
+await refresh().catch(error=>{$('status').textContent='加载失败：'+error.message;});
+</script></body></html>
+

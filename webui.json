@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "required_capabilities": ["custom_pages"],
+  "pages": [{
+    "id": "nicknames", "title": "微信账号管理", "placement": "sidebar", "icon": "list",
+    "description": "扫码绑定、用户介绍与本地昵称", "mode": "custom",
+    "entry": "webui/nicknames.html", "layout": "viewport",
+    "queries": {"context_health": {"api": "context.check"}, "relay_config": {"api": "relay.config"}, "users": {"api": "users.list"}, "binding": {"api": "binding.status", "parameters": {
+      "binding_id": {"type": "string", "max_length": 32}
+    }}},
+    "actions": {
+      "remove_user": {"api": "users.remove", "parameters": {
+        "user_key": {"type": "string", "required": true, "max_length": 64}
+      }},
+      "save_relay": {"api": "relay.save", "parameters": {
+        "config_json": {"type": "string", "required": true, "max_length": 20000}
+      }},
+      "bind": {"api": "binding.start", "parameters": {
+        "mode": {"type": "string", "required": true, "max_length": 5},
+        "description": {"type": "string", "max_length": 500}
+      }},
+      "cancel_binding": {"api": "binding.cancel", "parameters": {
+        "binding_id": {"type": "string", "required": true, "max_length": 32}
+      }},
+      "pair_code": {"api": "binding.code", "parameters": {
+        "binding_id": {"type": "string", "required": true, "max_length": 32},
+        "code": {"type": "string", "required": true, "max_length": 12}
+      }},
+      "rename": {"api": "users.rename", "parameters": {
+      "user_key": {"type": "string", "required": true, "max_length": 64},
+      "nickname": {"type": "string", "required": true, "max_length": 40}
+    }}}
+  }]
+}

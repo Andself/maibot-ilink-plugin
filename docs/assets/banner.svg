@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="350" viewBox="0 0 1280 350" role="img" aria-labelledby="title desc">
+  <title id="title">MaiBot × Weixin iLink</title>
+  <desc id="desc">A MaiBot plugin for multi-account Weixin conversations, invitations and permission-controlled message relays.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101c21"/><stop offset="1" stop-color="#102e29"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#31d692" stop-opacity=".19"/><stop offset="1" stop-color="#31d692" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="#c1f9dc" stroke-opacity=".035"/></pattern>
+  </defs>
+  <rect width="1280" height="350" rx="22" fill="url(#bg)"/>
+  <rect width="1280" height="350" rx="22" fill="url(#grid)"/>
+  <ellipse cx="1060" cy="175" rx="310" ry="300" fill="url(#glow)"/>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <text x="62" y="67" fill="#69dfae" font-size="13" font-weight="600" letter-spacing="3">ANSE / MAIBOT PLUGIN</text>
+    <text x="60" y="151" fill="#f3faf6" font-size="56" font-weight="700" letter-spacing="-1.5">MaiBot × Weixin iLink</text>
+    <text x="63" y="199" fill="#b0c6bd" font-size="20">One assistant. Connected conversations.</text>
+    <g fill="#cee9dd" font-size="12" font-weight="600" letter-spacing="1.2">
+      <rect x="63" y="244" width="162" height="34" rx="17" fill="#ffffff" fill-opacity=".055" stroke="#ffffff" stroke-opacity=".11"/>
+      <text x="83" y="266">MULTI-ACCOUNT</text>
+      <rect x="237" y="244" width="150" height="34" rx="17" fill="#ffffff" fill-opacity=".055" stroke="#ffffff" stroke-opacity=".11"/>
+      <text x="258" y="266">INVITE &amp; RELAY</text>
+      <rect x="399" y="244" width="139" height="34" rx="17" fill="#ffffff" fill-opacity=".055" stroke="#ffffff" stroke-opacity=".11"/>
+      <text x="420" y="266">WEBUI READY</text>
+    </g>
+  </g>
+  <g stroke="#69dfae" stroke-width="1.5" fill="none" opacity=".4">
+    <path d="M940 175H1006M1118 175H1172M1062 119V79M1062 231V271"/>
+    <circle cx="925" cy="175" r="15"/><circle cx="1187" cy="175" r="15"/>
+    <circle cx="1062" cy="64" r="15"/><circle cx="1062" cy="286" r="15"/>
+  </g>
+  <rect x="1006" y="119" width="112" height="112" rx="30" fill="#113e30" stroke="#69dfae" stroke-opacity=".6"/>
+  <path d="M1031 148h62a8 8 0 0 1 8 8v31a8 8 0 0 1-8 8h-32l-17 13v-13h-13a8 8 0 0 1-8-8v-31a8 8 0 0 1 8-8Z" fill="#6ae3ad"/>
+  <circle cx="1048" cy="171" r="4" fill="#113e30"/><circle cx="1063" cy="171" r="4" fill="#113e30"/><circle cx="1078" cy="171" r="4" fill="#113e30"/>
+</svg>
