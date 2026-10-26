@@ -785,6 +785,10 @@ class ProfileTests(unittest.TestCase):
         self.assertIn('plugin_options',json.dumps(context_hooks.add_background(original,'',True),ensure_ascii=False))
 
     def test_explicit_introduction_name_and_manual_override(self):
+        self.assertEqual(profiles.introduced_name("他自称 '小林'，你可以这样叫他。他是我的朋友"),'小林')
+        self.assertEqual(profiles.introduced_name('她自称“小周”，你可以这样叫她'),'小周')
+        self.assertEqual(profiles.introduced_name('你可以这样叫他。是我的朋友'),'')
+        self.assertEqual(profiles.introduced_name('你可以叫她'),'')
         self.assertEqual(profiles.introduced_name('他叫小周，然后他是我的魔兽朋友'),'小周')
         self.assertEqual(profiles.introduced_name('她的名字是“小林”，我的同学'),'小林')
         self.assertEqual(profiles.introduced_name('这是我的魔兽朋友，喜欢露营'),'')

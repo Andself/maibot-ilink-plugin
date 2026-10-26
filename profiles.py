@@ -60,12 +60,14 @@ def description_for(account, user):
 
 def introduced_name(description):
     """Use only explicit naming phrases, never infer a name from relationship text."""
-    match = re.search(r'(?:名字(?:是|叫)|昵称(?:是|叫)|称呼(?:为|是)|(?:他|她|朋友|你可以)?叫)'
-                      r'\s*[“\"「]?([^，,。；;！!？?\n”\"」]{1,40})', description)
-    if not match:
-        return ''
-    name = re.split(r'\s*(?:然后|是我的|是我|他是|她是|喜欢|爱好|和我|跟我)', match.group(1))[0].strip()
-    return name if name and len(name) <= 40 else ''
+    pattern = (r'(?:名字(?:是|叫)|昵称(?:是|叫)|称呼(?:为|是)|自称|(?:他|她|朋友|你可以)?叫)'
+               r'\s*[:：]?\s*[“\"「‘\']?([^，,。；;！!？?\n”\"」’\']{1,40})')
+    for match in re.finditer(pattern, description):
+        name = re.split(r'\s*(?:然后|是我的|是我|他是|她是|喜欢|爱好|和我|跟我)', match.group(1))[0].strip()
+        # Phrases such as “这样叫他” express a reference, not a person's name.
+        if name and len(name) <= 40 and name not in {'他', '她', '它', '我', '你', '他们', '她们', '自己', '对方'}:
+            return name
+    return ''
 
 
 def with_background(text, description):
