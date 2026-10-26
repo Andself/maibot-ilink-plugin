@@ -40,16 +40,18 @@
 
 **运行条件**：MaiBot 1.3.14+、插件 SDK 2.16+。当前验证环境为 Windows；账号注册锁依赖 `msvcrt`，暂不支持直接在 Linux / macOS 运行。版本兼容范围以 [_manifest.json](_manifest.json) 为准，较新的宿主版本不代表均已验证。
 
-在 **MaiBot 实例根目录**执行：
+在与 MaiBot 实例分开的开发目录执行：
 
 ```powershell
-git clone https://github.com/Andself/maibot-ilink-plugin.git plugins/anse.ilink
+git clone https://github.com/Andself/maibot-ilink-plugin.git
+cd maibot-ilink-plugin
+# 按下文“独立开发与部署”配置 .env.local，然后执行 python build.py
 ```
 
 使用运行 MaiBot 的同一个 Python 环境安装依赖。以下命令中的解释器路径需替换为实际路径：
 
 ```powershell
-uv pip install --python "<运行 MaiBot 的 python.exe 路径>" -r plugins/anse.ilink/requirements.txt
+uv pip install --python "<运行 MaiBot 的 python.exe 路径>" -r requirements.txt
 ```
 
 插件依赖为 `qrcode`、`Pillow` 和 `cryptography`，同时在 Manifest 中声明。插件本身不需要额外配置模型 API Key，也不需要修改 MaiBot 核心。
@@ -234,3 +236,26 @@ python build_release.py
 由 [Andself](https://github.com/Andself) 维护 · 基于 [Tencent / openclaw-weixin](https://github.com/Tencent/openclaw-weixin) 协议实现
 
 </div>
+
+
+## 独立开发与部署
+
+源码仓库与 MaiBot 实例目录分开存放。在独立仓库内执行：
+
+```powershell
+Copy-Item .env.example .env.local
+# 将 .env.local 的 MAIBOT_PLUGINS_DIR 改为现有 MaiBot 的 instance/plugins 目录
+python build.py --dry-run
+python build.py
+```
+
+`python build.py` 生成 `dist/` 发布包，并将运行文件部署到目标插件目录。
+相对路径以源码仓库为基准，与命令执行时所在目录无关。
+部署保留目标中的 `config.toml` 和未受构建管理的文件；后续构建只清理上次构建登记的过时文件。
+源码、Git 历史、测试、构建脚本和 `.env.local` 不会部署到运行目录。
+部署完成后重载插件或重启 MaiBot，避免正在运行的进程混用新旧模块。
+
+仅打发布包：`python build.py --package-only`（无需 `.env.local`）。
+兼容命令 `python build_release.py` 也只打包，不部署。
+测试在源码仓库执行；不要直接修改 MaiBot 实例中的部署文件。
+`.env.local` 属于本地设置，禁止提交；发布包使用文件白名单，不包含账号、聊天数据或密钥。

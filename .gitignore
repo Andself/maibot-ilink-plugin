@@ -20,3 +20,8 @@ dist/
 /data/
 /depends-data/
 /.private/
+
+# Local deployment settings
+.env
+.env.*
+!.env.example

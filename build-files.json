@@ -1,0 +1,33 @@
+{
+  "runtime": [
+    "_manifest.json",
+    "plugin.py",
+    "runtime_v2.py",
+    "transport.py",
+    "accounts.py",
+    "authorization.py",
+    "media.py",
+    "images.py",
+    "nicknames.py",
+    "profiles.py",
+    "bindings.py",
+    "context_hooks.py",
+    "relay.py",
+    "reply_contexts.py",
+    "welcome.py",
+    "login.py",
+    "webui.json",
+    "webui/nicknames.html",
+    "requirements.txt",
+    "relay_memory.py"
+  ],
+  "package_extra": [
+    "README.md",
+    "test_adapter.py",
+    "build_release.py",
+    "docs/assets/banner.svg",
+    "build.py",
+    "build-files.json",
+    ".env.example"
+  ]
+}

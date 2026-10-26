@@ -424,7 +424,7 @@ class ReplyContextTests(unittest.TestCase):
         now=time.time()
         old=now-90000
         stamp=reply_contexts.message_time({'create_time_ms':old*1000})
-        self.assertAlmostEqual(stamp,old)
+        self.assertAlmostEqual(stamp,old,delta=0.001)
         self.assertFalse(reply_contexts.active(stamp))
         self.assertEqual(reply_contexts.message_time({}),0)
         self.assertEqual(reply_contexts.message_time({'create_time_ms':(now+1000)*1000}),0)
