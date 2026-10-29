@@ -26,7 +26,6 @@ context_hooks=importlib.import_module('ilink_tests.context_hooks')
 images=importlib.import_module('ilink_tests.images')
 relay=runtime.relay
 reply_contexts=importlib.import_module('ilink_tests.reply_contexts')
-welcome=runtime.welcome
 authorization=importlib.import_module('ilink_tests.authorization')
 
 def test_picture(format='PNG'):
@@ -168,8 +167,6 @@ class RoutingTests(unittest.IsolatedAsyncioTestCase):
         inst.relay_lock=asyncio.Lock()
         inst.relay_results={}
         inst.relay_last={}
-        inst.welcome_tasks={}
-        inst.welcome_allowances={}
         return inst
 
     async def test_reply_uses_original_account_and_context(self):
@@ -360,56 +357,6 @@ class ImageRoutingTests(unittest.IsolatedAsyncioTestCase):
         message['raw_message'][1]={'type':'image','data':'missing'}
         with self.assertRaises(ValueError):await inst.outbound(message)
         inst.reply.assert_not_awaited()
-
-class WelcomeTests(unittest.TestCase):
-    def test_persistent_queue_claim_is_once_and_never_requeues_failed_attempt(self):
-        with tempfile.TemporaryDirectory() as tmp,patch.object(welcome,'STATE_DIR',Path(tmp)),patch.object(welcome,'account_lock',side_effect=nullcontext):
-            welcome.queue('bot','user')
-            self.assertEqual(welcome.state('bot','user'),'pending')
-            self.assertTrue(welcome.claim('bot','user'))
-            self.assertFalse(welcome.claim('bot','user'))
-            welcome.finish('bot','user','unconfirmed')
-            welcome.queue('bot','user')
-            self.assertEqual(welcome.state('bot','user'),'unconfirmed')
-            self.assertFalse(welcome.claim('bot','user'))
-
-    def test_no_context_welcome_cannot_bypass_reply_window(self):
-        with patch.object(welcome,'api') as send:
-            with self.assertRaises(RuntimeError):welcome.send_without_context({'allow_from':['owner']},'owner','你好')
-        send.assert_not_called()
-
-class WelcomeRoutingTests(unittest.IsolatedAsyncioTestCase):
-    instance=RoutingTests.instance
-
-    async def test_welcome_waits_for_inbound_then_uses_normal_gateway_and_host_storage(self):
-        inst=self.instance()
-        account={'account_id':'new','token':'test','allow_from':['friend']}
-        config={'primary_account_id':'primary','admin_account_id':'main','admin_user_id':'admin'}
-        uid=accounts.session_user('new','friend','primary')
-        inst._ctx.gateway=types.SimpleNamespace(update_state=AsyncMock())
-        inst._ctx.chat=types.SimpleNamespace(open_session=AsyncMock(return_value={'success':True,'session_id':'new-session'}))
-        async def host_send(text,stream_id,**kwargs):
-            self.assertEqual(stream_id,'new-session')
-            result=await inst.outbound({'message_info':{'additional_config':{'platform_io_target_user_id':uid}},
-                                       'raw_message':[{'type':'text','data':text}]})
-            return {'sent':result['success'],'message_id':'host-message'}
-        inst._ctx.send=types.SimpleNamespace(text=AsyncMock(side_effect=host_send))
-        with patch.object(runtime,'load_accounts',return_value={'new':account}),patch.object(runtime,'settings',return_value=config),patch.object(runtime,'display_name',return_value='小周'),patch.object(welcome,'claim',return_value=True),patch.object(welcome,'finish') as finish,patch.object(runtime,'text_message',return_value='wechat-id') as send:
-            await inst.welcome_user('new','friend')
-            send.assert_not_called()
-            inst.contexts[uid]=('ctx',time.time(),'new','friend')
-            await inst.welcome_user('new','friend')
-            send.assert_called_once_with(account,'friend','ctx',welcome.greeting('小周'))
-            finish.assert_called_once_with('new','friend','submitted')
-            flags=inst._ctx.send.text.call_args.kwargs
-            self.assertTrue(flags['storage_message'])
-            self.assertTrue(flags['sync_to_maisaka_history'])
-            self.assertEqual(flags['maisaka_source_kind'],'weixin_welcome')
-            self.assertNotIn(uid,inst.welcome_allowances)
-            self.assertIn(uid,inst.contexts)
-            rejected=await inst.outbound({'message_info':{'additional_config':{'platform_io_target_user_id':uid}},
-                'raw_message':[{'type':'text','data':welcome.greeting('小周')}]})
-            self.assertTrue(rejected['success'])
 
 class ReplyContextTests(unittest.TestCase):
     def test_24_hour_boundary_future_and_invalid_timestamps(self):
@@ -704,12 +651,12 @@ class ExpirationTests(unittest.IsolatedAsyncioTestCase):
         manager=bindings.BindingManager()
         manager.state={'binding_id':'old','status':'creating','mode':'user','qr_image':''}
         cfg={'admin_account_id':'admin','admin_user_id':'owner'}
-        with patch.object(bindings,'new_qr',return_value={'qrcode_img_content':'test'}),patch.object(bindings,'qr_image',return_value='image'),patch.object(bindings,'wait_for_login',AsyncMock(side_effect=authorization.InvitationExpired())),patch.object(bindings,'register') as register,patch.object(bindings,'queue') as queue:
+        with patch.object(bindings,'new_qr',return_value={'qrcode_img_content':'test'}),patch.object(bindings,'qr_image',return_value='image'),patch.object(bindings,'wait_for_login',AsyncMock(side_effect=authorization.InvitationExpired())),patch.object(bindings,'register') as register:
             manager.task=asyncio.create_task(manager.run(dict(manager.state),'介绍',cfg))
             await manager.task
             self.assertEqual(manager.state['status'],'expired')
             self.assertEqual(manager.state['qr_image'],'')
-            register.assert_not_called();queue.assert_not_called()
+            register.assert_not_called()
         with patch.object(bindings,'settings',return_value=cfg),patch.object(bindings,'load_accounts',return_value={}),patch.object(manager,'run',AsyncMock()):
             result=await manager.start('user','介绍')
             self.assertNotEqual(result['binding_id'],'old')
@@ -743,10 +690,9 @@ class BindingTests(unittest.IsolatedAsyncioTestCase):
         manager.state={'binding_id':'test','mode':'user','status':'creating','expires_at':time.time()+300}
         cfg={'admin_account_id':'main','admin_user_id':'admin'}
         response={'ilink_bot_id':'friendbot','ilink_user_id':'friend','bot_token':'secret-test'}
-        with patch.object(bindings,'new_qr',return_value={'qrcode_img_content':'https://example.test'}),patch.object(bindings,'qr_image',return_value='data:image/png;base64,test'),patch.object(bindings,'wait_for_login',new=AsyncMock(return_value=response)),patch.object(bindings,'settings',return_value=cfg),patch.object(bindings,'register',return_value={'account_id':'friendbot'}) as register,patch.object(bindings,'save_profile') as save,patch.object(bindings,'queue') as queue:
+        with patch.object(bindings,'new_qr',return_value={'qrcode_img_content':'https://example.test'}),patch.object(bindings,'qr_image',return_value='data:image/png;base64,test'),patch.object(bindings,'wait_for_login',new=AsyncMock(return_value=response)),patch.object(bindings,'settings',return_value=cfg),patch.object(bindings,'register',return_value={'account_id':'friendbot'}) as register,patch.object(bindings,'save_profile') as save:
             await manager.run(dict(manager.state),'小林，同学，喜欢露营',cfg)
             save.assert_called_once_with('friendbot','friend','小林，同学，喜欢露营')
-            queue.assert_called_once_with('friendbot','friend')
             self.assertFalse(register.call_args.kwargs['admin'])
             self.assertEqual(manager.state['status'],'confirmed')
             public=manager.status('test')

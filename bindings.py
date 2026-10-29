@@ -8,7 +8,6 @@ import qrcode
 from .accounts import load_accounts, register, settings
 from .authorization import InvitationExpired, LOGIN_TIMEOUT, new_qr, wait_for_login
 from .profiles import clean_description, save_profile
-from .welcome import queue
 
 
 def qr_image(content):
@@ -96,10 +95,8 @@ class BindingManager:
                                            bootstrap=initial['mode'] == 'admin')
             if description:
                 await asyncio.to_thread(save_profile, item['account_id'], response['ilink_user_id'], description)
-            if initial['mode'] == 'user':
-                await asyncio.to_thread(queue, item['account_id'], response['ilink_user_id'])
             self.state.update(status='confirmed', qr_image='', message='管理员绑定成功。' if initial['mode'] == 'admin'
-                              else '绑定成功，已安排主动欢迎消息；请在名单查看发送状态。')
+                              else '绑定成功。请让用户在微信机器人会话中先发送一条消息，即可开始聊天。')
         except asyncio.CancelledError:
             raise
         except (InvitationExpired, TimeoutError):

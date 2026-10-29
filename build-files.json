@@ -14,7 +14,6 @@
     "context_hooks.py",
     "relay.py",
     "reply_contexts.py",
-    "welcome.py",
     "login.py",
     "webui.json",
     "webui/nicknames.html",

@@ -95,7 +95,6 @@ async function refresh(){
         details.append(summary,label,quote);note.append(details);nameCell.append(note);
       }
       const role=cell(row,'');const badge=document.createElement('span');badge.className='badge';badge.textContent=user.role;role.append(badge);
-      if(user.welcome_status){const welcomeNote=document.createElement('div');welcomeNote.className='muted';welcomeNote.style.fontSize='12px';welcomeNote.textContent='欢迎消息：'+({pending:'等待用户发消息后发送',attempting:'已尝试，结果未确认',submitted:'已提交（未验证送达）',unconfirmed:'失败或结果未确认',skipped:'已跳过'}[user.welcome_status]||'未知状态');nameCell.append(welcomeNote);}
       cell(row,user.user_id,'id');cell(row,user.account,'id');
       const td=cell(row,'');const edit=document.createElement('button');edit.type='button';edit.textContent='编辑';edit.setAttribute('aria-label','编辑 '+user.display_name+' 的昵称');
       edit.onclick=()=>openEditor(user,edit);td.append(edit);

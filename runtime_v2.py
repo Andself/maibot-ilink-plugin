@@ -14,7 +14,6 @@ from .profiles import clean_description, description_for, identity_context, save
 from . import relay
 from . import relay_memory
 from .reply_contexts import MAX_AGE, active, message_time, remember, restore
-from . import welcome
 from .transport import STATE_DIR, allowed_text, api, save_json
 
 GATEWAY = 'anse_ilink'
@@ -38,13 +37,11 @@ class ILinkPlugin(MaiBotPlugin):
         self.relay_lock = asyncio.Lock()
         self.relay_results = {}
         self.relay_last = {}
-        self.welcome_tasks = {}
-        self.welcome_allowances = {}
         self.worker = asyncio.create_task(self.supervise())
 
     async def on_unload(self):
         await self.bindings.close()
-        tasks = [self.worker, *self.tasks.values(), *self.welcome_tasks.values()]
+        tasks = [self.worker, *self.tasks.values()]
         if self.invite_task:
             tasks.append(self.invite_task)
         for task in tasks:
@@ -63,54 +60,7 @@ class ILinkPlugin(MaiBotPlugin):
             for account_id in accounts:
                 if account_id not in self.tasks or self.tasks[account_id].done():
                     self.tasks[account_id] = asyncio.create_task(self.monitor(account_id))
-                for user in accounts[account_id].get('allow_from', []):
-                    status = await asyncio.to_thread(welcome.state,account_id,user)
-                    welcome_key = relay.user_key(account_id,user)
-                    if status == 'pending' and (welcome_key not in self.welcome_tasks or self.welcome_tasks[welcome_key].done()):
-                        self.welcome_tasks[welcome_key] = asyncio.create_task(self.welcome_user(account_id,user))
             await asyncio.sleep(3)
-
-    async def welcome_user(self, account_id, user):
-        uid = None
-        try:
-            config=await asyncio.to_thread(settings)
-            primary=config.get('primary_account_id')
-            if not primary:
-                return
-            uid=session_user(account_id,user,primary)
-            context=self.contexts.get(uid)
-            if not context or not active(context[1]):
-                return  # Keep pending until a genuine inbound message opens the window.
-            if not await asyncio.to_thread(welcome.claim,account_id,user):
-                return
-            records = await asyncio.to_thread(load_accounts)
-            config = await asyncio.to_thread(settings)
-            primary = config.get('primary_account_id')
-            account = records.get(account_id)
-            if not primary or not account or user not in account.get('allow_from', []) or is_admin(config,account_id,user):
-                await asyncio.to_thread(welcome.finish,account_id,user,'skipped')
-                return
-            uid = session_user(account_id,user,primary)
-            name = await asyncio.to_thread(display_name,account_id,user,config)
-            text = welcome.greeting(name)
-            await self.ctx.gateway.update_state(gateway_name=GATEWAY,ready=True,platform='weixin_ilink',account_id=primary)
-            opened = await self.ctx.chat.open_session(platform='weixin_ilink',chat_type='private',user_id=uid,account_id=primary)
-            if not isinstance(opened,dict) or not opened.get('success') or not opened.get('session_id'):
-                raise RuntimeError('Welcome session unavailable')
-            sent = await self.ctx.send.text(text,opened['session_id'],return_details=True,
-                storage_message=True,sync_to_maisaka_history=True,maisaka_source_kind='weixin_welcome')
-            if not isinstance(sent,dict) or sent.get('sent') is not True:
-                raise RuntimeError('Welcome submission failed')
-            await asyncio.to_thread(welcome.finish,account_id,user,'submitted')
-            self.ctx.logger.info('iLink welcome submitted; account=%s',key(account_id)[:8])
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            await asyncio.to_thread(welcome.finish,account_id,user,'unconfirmed')
-            self.ctx.logger.warning('iLink welcome unconfirmed; error_type=%s',type(exc).__name__)
-        finally:
-            if uid:
-                self.welcome_allowances.pop(uid,None)
 
     async def monitor(self, account_id):
         cursor_file = STATE_DIR / 'cursors' / (key(account_id) + '.local.json')
@@ -621,7 +571,6 @@ class ILinkPlugin(MaiBotPlugin):
             item = await asyncio.to_thread(register, response)
             if description:
                 await asyncio.to_thread(save_profile, item['account_id'], response['ilink_user_id'], description)
-            await asyncio.to_thread(welcome.queue,item['account_id'],response['ilink_user_id'])
             await self.reply(admin_uid, '好友授权成功，已加入私聊服务。好友可在自己的机器人会话发送“你好”。新账号没有管理员权限。')
         except asyncio.CancelledError:
             raise

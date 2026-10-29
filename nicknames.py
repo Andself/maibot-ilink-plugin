@@ -27,7 +27,6 @@ def display_name(account_id, user_id, config=None):
 
 def list_users():
     from .profiles import description_for, identity_context
-    from .welcome import state
     from .reply_contexts import window
     config = settings()
     rows = []
@@ -42,7 +41,6 @@ def list_users():
                          'display_name': display_name(account_id, user_id, config),
                          'description': description_for(account_id, user_id),
                          'introduced_by': provenance.get('introduced_by', {}).get('name', ''),
-                         'welcome_status': state(account_id,user_id),
                          'role': '管理员' if is_admin(config, account_id, user_id) else '普通用户'})
     return {'users': rows}
 

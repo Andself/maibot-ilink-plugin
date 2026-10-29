@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "id": "anse.ilink",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "name": "微信 iLink 多账号私聊",
   "description": "基于腾讯公开 iLink 协议的 MaiBot 多账号私聊、图片表情包与邀请管理插件。非腾讯认证插件。",
   "author": {

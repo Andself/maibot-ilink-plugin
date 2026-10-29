@@ -13,7 +13,6 @@ if not __package__:
 from .accounts import register
 from .authorization import new_qr, wait_for_login
 from .transport import STATE_DIR, save_json
-from .welcome import queue
 
 OUTPUT = STATE_DIR / 'login'
 import qrcode
@@ -33,8 +32,6 @@ async def main():
         return await asyncio.to_thread(input, 'Enter the pairing code shown by official WeChat: ')
     status = await wait_for_login(qr, on_verify=verify)
     item = await asyncio.to_thread(register, status, admin=args.admin)
-    if not args.admin:
-        await asyncio.to_thread(queue, item['account_id'], status['ilink_user_id'])
     save_json(OUTPUT / 'login-status.local.json', {'status': 'confirmed', 'mode': 'administrator' if args.admin else 'user'})
     image.unlink(missing_ok=True)
     print('Authorization saved without replacing other accounts.', flush=True)
